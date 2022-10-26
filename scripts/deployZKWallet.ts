@@ -5,15 +5,15 @@ async function main() {
     const validatorAddress = "0xb1e86C4c687B85520eF4fd2a0d14e81970a15aFB";
 
     // Grab the schema hash from Polygon ID Platform
-    const schemaHash = "schemaHash"
+    const schemaHash = "a8311ea713ebacb57ae21a426cdf1113"
 
     const schemaEnd = fromLittleEndian(hexToBytes(schemaHash))
 
     const ownerQuery = {
         schema: ethers.BigNumber.from(schemaEnd),
         slotIndex: 2,
-        operator: 2,
-        value: [20020101, ...new Array(63).fill(0).map(i => 0)],
+        operator: 1,
+        value: [1, ...new Array(63).fill(0).map(i => 0)],
         circuitId,
     };
 
