@@ -8,7 +8,7 @@ import "./lib/contracts/contracts/verifiers/ZKPVerifier.sol";
 
 contract zkWallet is ZKPVerifier, SimpleWallet {
     using UserOperationLib for UserOperation;
-
+    
     uint64 public constant OWNER_REQUEST_ID = 1;
 
     constructor(

@@ -1,21 +1,20 @@
 import {
     arrayify,
+    BytesLike,
     defaultAbiCoder,
     getCreate2Address,
     hexDataSlice,
     hexValue,
     keccak256
   } from 'ethers/lib/utils'
-import { ethers, Contract, Signer, Wallet } from 'ethers'
-//import { AddressZero, callDataCost, HashZero, rethrow } from './testutils'
-import { ecsign, toRpcSig, keccak256 as keccak256_buffer } from 'ethereumjs-util'
+import { ethers } from 'ethers'
 import { UserOperation } from './userOperation'
 import { TransactionResponse } from '@ethersproject/abstract-provider'
 import Web3 from 'web3'
 
 let EntryPoint = "0x1b98F08dB8F12392EAE339674e568fe29929bC47"
 
-const web3 = new Web3('ws://localhost:8546');
+const web3 = new Web3('http://localhost:8545');
 
 function encode (typevalues: Array<{ type: string, val: any }>, forSignature: boolean): string {
 const types = typevalues.map(typevalue => typevalue.type === 'bytes' && forSignature ? 'bytes32' : typevalue.type)
@@ -140,33 +139,32 @@ interface ZKProof {
   c: number[],
 }
 
-export function callOp(url: string, zk: ZKProof) {
+export function callOp(walletAddress: string, url: string, zk: ZKProof) {
     let RPCProvider = new ethers.providers.JsonRpcProvider(url);
     let incABI = Object({"inputs":[],"name":"inc","outputs":[],"stateMutability":"nonpayable","type":"function"});
     let execFromEntrypointABI = Object({"inputs":[{"internalType":"address","name":"dest","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"bytes","name":"func","type":"bytes"}],"name":"execFromEntryPoint","outputs":[],"stateMutability":"nonpayable","type":"function"});
     let countAddress = "0x744f2af121b717a3Bc594f56111B8244a89199D5"
     let countCalldata = web3.eth.abi.encodeFunctionCall(incABI, []);
     let walletCalldata = web3.eth.abi.encodeFunctionCall(execFromEntrypointABI, [countAddress, '0', countCalldata]);
-    let abiCoder = ethers.utils.defaultAbiCoder
-    let zkProof = abiCoder.encode([ 
+    let zkProof = defaultAbiCoder.encode([ 
       "uint64", "uint256[]","uint256[2]", "uint256[2][2]","uint256[2]"], [
       zk.requestId, zk.inputs, zk.a, zk.b, zk.c ]
     );
-    const testUserOp: UserOperation = {
-        sender: "0x0263282d1947bC0Fa3cE881a362FA339da0a1336",
+    const UserOp: UserOperation = {
+        sender: walletAddress,
         nonce: 0,
         initCode: '0x',
         callData: walletCalldata,
         callGasLimit: 0,
-        verificationGasLimit: 100000, // default verification gas. will add create2 cost (3200+200*length) if initCode exists
+        verificationGasLimit: 300000, // default verification gas. will add create2 cost (3200+200*length) if initCode exists
         preVerificationGas: 21000, // should also cover calldata cost.
         maxFeePerGas: 0,
         maxPriorityFeePerGas: 1e9,
         paymasterAndData: '0x',
-        signature: '0x'
+        signature: zkProof
       }
-    let signedUserOp =  signUserOp(testUserOp, zkProof)
-    let sendUserOp
+    // let signedUserOp =  signUserOp(testUserOp, zkProof)
+    // let sendUserOp
 
-    return sendUserOp = rpcUserOpSender(RPCProvider, EntryPoint)(signedUserOp)
+    return rpcUserOpSender(RPCProvider, EntryPoint)(UserOp)
 }
